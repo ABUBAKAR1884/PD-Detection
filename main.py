@@ -4,16 +4,22 @@ import joblib
 import plotly.express as px
 from streamlit_lottie import st_lottie
 import requests
-
-# --- Auth Logic ---
-import pandas as pd
-import streamlit as st
 import os
+from io import BytesIO
+from fpdf import FPDF
 
+from utils.preprocessing import preprocess_data
+from utils.feature_engineering import extract_features
+from utils.predict import make_prediction
+from utils.training import train_model
+from sklearn.metrics import classification_report, confusion_matrix
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# --- Page Config ---
 st.set_page_config(page_title="Parkinson's Disease Detection", layout="centered")
 
-
-# Load users from CSV
+# --- Load users from CSV ---
 def load_users():
     if os.path.exists("users.csv"):
         return pd.read_csv("users.csv")
@@ -26,7 +32,7 @@ def save_user(username, password):
 
 users_df = load_users()
 
-# Authentication block
+# --- Authentication ---
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
@@ -56,9 +62,6 @@ if not st.session_state.authenticated:
 
     st.stop()
 
-# --- Load model (Make sure model.pkl exists) ---
-model = joblib.load("model.pkl")
-
 # --- Load animation ---
 def load_lottie(url):
     r = requests.get(url)
@@ -67,7 +70,6 @@ def load_lottie(url):
     return r.json()
 
 # --- UI Styling ---
-
 st.markdown("""
     <style>
         .main {
@@ -97,6 +99,7 @@ st.markdown("<h1 class='title'>🧠 Parkinson's Disease Detection</h1>", unsafe_
 st.markdown("<p class='subtitle'>Upload patient clinical data to predict Parkinson's likelihood.</p>", unsafe_allow_html=True)
 
 # --- Upload + Prediction UI ---
+model_option = st.selectbox("Choose Model for Prediction", ["Default Model", "User Trained Model"])
 uploaded_file = st.file_uploader("📁 Upload CSV file", type=["csv"])
 
 if uploaded_file:
@@ -105,9 +108,14 @@ if uploaded_file:
     st.dataframe(data.head())
 
     if st.button("🧪 Predict PD Diagnosis"):
-        prediction = model.predict(data)
-        data['Prediction'] = prediction
+        preprocessed = preprocess_data(data)
+        features = extract_features(preprocessed)
 
+        model_path = "model.pkl" if model_option == "Default Model" else "model/user_trained_model.pkl"
+        model = joblib.load(model_path)
+        prediction = model.predict(features)
+
+        data['Prediction'] = prediction
         st.success("✅ Prediction complete!")
         st.subheader("📋 Results")
         st.dataframe(data)
@@ -122,11 +130,67 @@ if uploaded_file:
                      title="🧾 Diagnosis Summary")
         st.plotly_chart(fig)
 
-        # Download option
+        # Download CSV option
         csv = data.to_csv(index=False).encode('utf-8')
         st.download_button("📥 Download Results", csv, "predictions.csv", "text/csv")
 
+        # --- Model Evaluation Section ---
+        st.subheader("📊 Model Evaluation Metrics")
+        if hasattr(model, "predict_proba"):
+            y_proba = model.predict_proba(features)[:, 1] > 0.5
+        else:
+            y_proba = prediction
+
+        report = classification_report(prediction, y_proba, output_dict=True)
+        st.dataframe(pd.DataFrame(report).transpose())
+
+        cm = confusion_matrix(prediction, y_proba)
+        fig_cm, ax_cm = plt.subplots()
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax_cm)
+        ax_cm.set_title("Confusion Matrix")
+        ax_cm.set_xlabel("Predicted")
+        ax_cm.set_ylabel("Actual")
+        st.pyplot(fig_cm)
+
+        # --- PDF Report Download ---
+        st.subheader("📄 Generate PDF Report")
+        if st.button("Generate PDF"):
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_font("Arial", size=12)
+            pdf.cell(200, 10, txt="Parkinson's Disease Prediction Report", ln=True, align='C')
+            pdf.ln(10)
+            pdf.multi_cell(0, 10, txt=f"Model Used: {model_option}\nTotal Records: {len(data)}\nPredicted Parkinson's: {sum(data['Prediction'] == 1)}\nPredicted Healthy: {sum(data['Prediction'] == 0)}")
+            
+            pdf_output = BytesIO()
+            pdf.output(pdf_output)
+            st.download_button(
+                label="📄 Download PDF Report",
+                data=pdf_output.getvalue(),
+                file_name="parkinsons_report.pdf",
+                mime="application/pdf"
+            )
+
 else:
     st.info("📤 Upload a CSV file containing clinical features.")
+
+# --- Train Your Own Model Section ---
+st.markdown("---")
+st.header("🧠 Train Your Own Model")
+
+train_file = st.file_uploader("📁 Upload labeled data (CSV with target column)", key="train")
+model_type = st.selectbox("Select Model Type", ["Random Forest", "Logistic Regression", "Neural Network"])
+target_column = st.text_input("Enter the name of the target column (e.g., 'target')")
+
+if train_file and target_column:
+    train_data = pd.read_csv(train_file)
+    st.write("📄 Training Data Preview:", train_data.head())
+
+    if st.button("🚀 Train Model"):
+        try:
+            model, acc, f1 = train_model(train_data, target_column, model_type)
+            st.success(f"✅ Model trained successfully!\nAccuracy: {acc:.2f}\nF1 Score: {f1:.2f}")
+        except Exception as e:
+            st.error(f"❌ Error during training: {e}")
 
 st.markdown("</div>", unsafe_allow_html=True)
