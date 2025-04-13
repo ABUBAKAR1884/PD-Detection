@@ -6,3 +6,5 @@ plotly
 streamlit-lottie
 matplotlib
 seaborn
+fpdf
+
