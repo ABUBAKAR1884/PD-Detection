@@ -115,7 +115,14 @@ if uploaded_file:
         model_path = "model/user_trained_model.pkl"
         MODEL_URL = "https://raw.githubusercontent.com/ABUBAKAR1884/PD-Detection/main/model/user_trained_model.pkl"
         model = joblib.load(model_path)
+        features = extract_features(preprocessed)
+
+        # Align feature columns
+        features = features[model.feature_names_in_]
+
         prediction = model.predict(features)
+
+
 
         data['Prediction'] = prediction
         st.success("✅ Prediction complete!")
