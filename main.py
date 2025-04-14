@@ -115,7 +115,6 @@ if uploaded_file:
         model_path = "model/user_trained_model.pkl"
         MODEL_URL = "https://raw.githubusercontent.com/ABUBAKAR1884/PD-Detection/main/model/user_trained_model.pkl"
         model = joblib.load(model_path)
-        features = extract_features(preprocessed)
 
         # Load the saved feature columns
         feature_columns = joblib.load("model/feature_columns.pkl")
@@ -124,7 +123,7 @@ if uploaded_file:
         features = features[feature_columns]
 
         # Make prediction
-         prediction = model.predict(features)
+        prediction = model.predict(features)
 
         data['Prediction'] = prediction
         st.success("✅ Prediction complete!")
@@ -172,7 +171,7 @@ if uploaded_file:
             pdf.cell(200, 10, txt="Parkinson's Disease Prediction Report", ln=True, align='C')
             pdf.ln(10)
             pdf.multi_cell(0, 10, txt=f"Model Used: {model_option}\nTotal Records: {len(data)}\nPredicted Parkinson's: {sum(data['Prediction'] == 1)}\nPredicted Healthy: {sum(data['Prediction'] == 0)}")
-            
+
             pdf_output = BytesIO()
             pdf.output(pdf_output)
             st.download_button(
