@@ -117,13 +117,13 @@ if uploaded_file:
         model = joblib.load(model_path)
         features = extract_features(preprocessed)
 
-         # Load the saved feature columns
+        # Load the saved feature columns
         feature_columns = joblib.load("model/feature_columns.pkl")
 
         # Align feature columns manually using saved list
         features = features[feature_columns]
 
-       # Make prediction
+        # Make prediction
          prediction = model.predict(features)
 
         data['Prediction'] = prediction
