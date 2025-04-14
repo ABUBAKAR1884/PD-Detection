@@ -121,9 +121,14 @@ if uploaded_file:
 
         # Align feature columns manually using saved list
         features = features[feature_columns]
+        
+        # Ensure the features DataFrame has the exact expected columns in order
+        expected_columns = ['feature_0', 'feature_1', 'feature_2', 'feature_3', 'feature_4']
+        features = features[expected_columns]
 
         # Make prediction
         prediction = model.predict(features)
+
 
         data['Prediction'] = prediction
         st.success("✅ Prediction complete!")
