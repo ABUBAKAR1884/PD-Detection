@@ -124,7 +124,7 @@ if uploaded_file:
         features = features[feature_columns]
 
 # Make prediction
-prediction = model.predict(features
+prediction = model.predict(features)
 
 
 
