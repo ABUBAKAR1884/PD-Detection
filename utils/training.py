@@ -46,8 +46,13 @@ def train_model(data, target_column, model_type="Random Forest"):
     accuracy = accuracy_score(y_val, y_pred)
     f1 = f1_score(y_val, y_pred, average='weighted')
 
+    
+
     # Save trained model
-    joblib.dump(X.columns.tolist(), "model/feature_columns.pkl")
+   joblib.dump(model, "model/user_trained_model.pkl")
+
+   # Save feature names used during training
+   joblib.dump(X.columns.tolist(), "model/feature_columns.pkl")
 
 
     return model, accuracy, f1
