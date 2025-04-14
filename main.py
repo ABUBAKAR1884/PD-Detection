@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import joblib
+import urllib.request
 import plotly.express as px
 from streamlit_lottie import st_lottie
 import requests
@@ -111,7 +112,8 @@ if uploaded_file:
         preprocessed = preprocess_data(data)
         features = extract_features(preprocessed)
 
-        model_path = "model.pkl" if model_option == "Default Model" else "model/user_trained_model.pkl"
+        model_path = "model/user_trained_model.pkl"
+        MODEL_URL = "https://raw.githubusercontent.com/ABUBAKAR1884/PD-Detection/main/model/user_trained_model.pkl"
         model = joblib.load(model_path)
         prediction = model.predict(features)
 
