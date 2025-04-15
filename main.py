@@ -119,15 +119,14 @@ if uploaded_file:
         # Load the saved feature columns
         feature_columns = joblib.load("model/feature_columns.pkl")
 
-        # Align feature columns manually using saved list
-        features = features[feature_columns]
-        
-        # Ensure the features DataFrame has the exact expected columns in order
-        expected_columns = ['feature_0', 'feature_1', 'feature_2', 'feature_3', 'feature_4']
-        features = features[expected_columns]
+        # Define column names your model expects
+        columns = ['feature_0', 'feature_1', 'feature_2', 'feature_3', 'feature_4']
+
+        # Create DataFrame from multiple rows
+        features_df = pd.DataFrame(features, columns=columns)
 
         # Make prediction
-        prediction = model.predict(features)
+        prediction = model.predict(features_df)
 
 
         data['Prediction'] = prediction
